@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#1f6feb" />
+  <title>Comprovantes PIX</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="topo">
+    <h1>🧾 Comprovantes PIX</h1>
+    <div class="quem" id="quemBox" hidden>
+      <span id="quemNome"></span>
+      <button type="button" id="trocarQuem" class="link">trocar</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- Etapa 0: identificacao -->
+    <section id="telaQuem" class="card" hidden>
+      <h2>Quem é você?</h2>
+      <p class="ajuda">Só pra marcar quem registrou o comprovante. Fica salvo no seu celular.</p>
+      <input type="text" id="inputQuem" placeholder="Seu nome" autocomplete="name" />
+      <button type="button" id="salvarQuem" class="btn primario">Continuar</button>
+    </section>
+
+    <!-- Etapa 1: capturar -->
+    <section id="telaCaptura" class="card" hidden>
+      <label class="captura">
+        <input type="file" id="foto" accept="image/*" capture="environment" hidden />
+        <span class="captura-icone">📸</span>
+        <span class="captura-txt">Bater foto do comprovante</span>
+      </label>
+      <p class="ajuda">Enquadre bem os dados: nome, data/hora e valor.</p>
+    </section>
+
+    <!-- Etapa 2: lendo -->
+    <section id="telaLendo" class="card center" hidden>
+      <div class="spinner"></div>
+      <p>Lendo o comprovante…</p>
+    </section>
+
+    <!-- Etapa 3: conferir -->
+    <section id="telaConferir" class="card" hidden>
+      <h2>Confira e corrija</h2>
+      <img id="preview" class="preview" alt="Comprovante" />
+
+      <form id="formConferir">
+        <div class="linha">
+          <label>Data <span class="req">*</span>
+            <input type="date" id="cData" required />
+          </label>
+          <label>Hora <span class="req">*</span>
+            <input type="time" id="cHora" required />
+          </label>
+        </div>
+
+        <label>Nome <span class="req">*</span>
+          <input type="text" id="cNome" placeholder="Nome de quem pagou" required />
+        </label>
+
+        <label>Valor (R$)
+          <input type="text" id="cValor" inputmode="decimal" placeholder="Ex: 100,00" />
+        </label>
+
+        <label>Banco de origem
+          <input type="text" id="cBanco" placeholder="Ex: Nubank" />
+        </label>
+
+        <label>ID / E2E da transação
+          <input type="text" id="cE2e" placeholder="Ex: E1234..." />
+        </label>
+
+        <label>Observação (opcional)
+          <textarea id="cObs" rows="2" placeholder="Ex: dízimo, oferta, culto de domingo…"></textarea>
+        </label>
+
+        <div class="acoes">
+          <button type="button" id="btnCancelar" class="btn secundario">Refazer</button>
+          <button type="submit" id="btnEnviar" class="btn primario">Enviar pro Telegram</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- Etapa 4: sucesso -->
+    <section id="telaOk" class="card center" hidden>
+      <div class="check">✅</div>
+      <h2>Enviado!</h2>
+      <button type="button" id="btnNovo" class="btn primario">Registrar outro</button>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

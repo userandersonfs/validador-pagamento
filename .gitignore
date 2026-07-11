@@ -1,0 +1,8 @@
+node_modules/
+.env
+*.log
+.DS_Store
+
+# Pacotes de idioma do Tesseract (baixados em runtime)
+*.traineddata
+*.traineddata.gz
