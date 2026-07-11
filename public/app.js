@@ -119,4 +119,52 @@ $('formConferir').addEventListener('submit', async (e) => {
 $('btnCancelar').addEventListener('click', () => { idPendente = null; mostrar('telaCaptura'); });
 $('btnNovo').addEventListener('click', () => mostrar('telaCaptura'));
 
+// --- PWA: service worker + instalacao ---
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
+}
+
+const ehIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+const jaInstalado = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+const dispensou = localStorage.getItem('instalar_dispensado') === '1';
+let promptInstalar = null;
+
+function mostrarBanner() {
+  if (jaInstalado || dispensou) return;
+  $('instalarBanner').hidden = false;
+}
+
+// Android/Chrome: intercepta o convite nativo
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  promptInstalar = e;
+  $('btnInstalar').hidden = false;
+  $('instalarTxt').textContent = '📲 Instale na tela inicial pra usar como app.';
+  mostrarBanner();
+});
+
+$('btnInstalar').addEventListener('click', async () => {
+  if (!promptInstalar) return;
+  promptInstalar.prompt();
+  await promptInstalar.userChoice;
+  promptInstalar = null;
+  $('instalarBanner').hidden = true;
+});
+
+$('fecharInstalar').addEventListener('click', () => {
+  $('instalarBanner').hidden = true;
+  localStorage.setItem('instalar_dispensado', '1');
+});
+
+window.addEventListener('appinstalled', () => { $('instalarBanner').hidden = true; });
+
+// iPhone (Safari nao dispara beforeinstallprompt): mostra o passo a passo
+if (ehIOS && !jaInstalado) {
+  $('btnInstalar').hidden = true;
+  $('instalarTxt').innerHTML = '📲 Pra instalar: toque em <b>Compartilhar</b> ⬆️ e depois <b>Adicionar à Tela de Início</b>.';
+  mostrarBanner();
+}
+
 iniciar();

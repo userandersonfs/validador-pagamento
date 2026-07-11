@@ -3,22 +3,48 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#1f6feb" />
-  <title>Comprovantes PIX</title>
+  <title>Comprovantes PIX · Santo Antônio</title>
+
+  <!-- PWA -->
+  <meta name="theme-color" content="#6b4523" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="icon" href="/icons/favicon-32.png" sizes="32x32" />
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Santo Antônio" />
+
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
   <header class="topo">
-    <h1>🧾 Comprovantes PIX</h1>
+    <div class="marca">
+      <img src="/icons/icon-192.png" alt="" class="emblema" />
+      <div class="marca-txt">
+        <h1>Comunidade Santo Antônio</h1>
+        <p>Comprovantes PIX</p>
+      </div>
+    </div>
     <div class="quem" id="quemBox" hidden>
       <span id="quemNome"></span>
       <button type="button" id="trocarQuem" class="link">trocar</button>
     </div>
   </header>
 
+  <!-- Faixa de instalacao (Android/iPhone) -->
+  <div id="instalarBanner" class="instalar" hidden>
+    <span id="instalarTxt">📲 Instale na tela inicial pra usar como app.</span>
+    <div class="instalar-acoes">
+      <button type="button" id="btnInstalar" class="btn-mini" hidden>Instalar</button>
+      <button type="button" id="fecharInstalar" class="link claro">agora não</button>
+    </div>
+  </div>
+
   <main>
     <!-- Etapa 0: identificacao -->
     <section id="telaQuem" class="card" hidden>
+      <img class="lirio-img" src="/icons/icon-192.png" alt="Santo Antônio" />
       <h2>Quem é você?</h2>
       <p class="ajuda">Só pra marcar quem registrou o comprovante. Fica salvo no seu celular.</p>
       <input type="text" id="inputQuem" placeholder="Seu nome" autocomplete="name" />
@@ -31,8 +57,9 @@
         <input type="file" id="foto" accept="image/*" capture="environment" hidden />
         <span class="captura-icone">📸</span>
         <span class="captura-txt">Bater foto do comprovante</span>
+        <span class="captura-sub">Toque para abrir a câmera</span>
       </label>
-      <p class="ajuda">Enquadre bem os dados: nome, data/hora e valor.</p>
+      <p class="ajuda">Enquadre bem: nome, data/hora e valor.</p>
     </section>
 
     <!-- Etapa 2: lendo -->
@@ -44,6 +71,7 @@
     <!-- Etapa 3: conferir -->
     <section id="telaConferir" class="card" hidden>
       <h2>Confira e corrija</h2>
+      <p class="ajuda">O que o app não leu direito, ajuste aqui antes de enviar.</p>
       <img id="preview" class="preview" alt="Comprovante" />
 
       <form id="formConferir">
@@ -73,12 +101,12 @@
         </label>
 
         <label>Observação (opcional)
-          <textarea id="cObs" rows="2" placeholder="Ex: dízimo, oferta, culto de domingo…"></textarea>
+          <textarea id="cObs" rows="2" placeholder="Ex: dízimo, oferta, festa de Santo Antônio…"></textarea>
         </label>
 
         <div class="acoes">
           <button type="button" id="btnCancelar" class="btn secundario">Refazer</button>
-          <button type="submit" id="btnEnviar" class="btn primario">Enviar pro Telegram</button>
+          <button type="submit" id="btnEnviar" class="btn primario">Enviar</button>
         </div>
       </form>
     </section>
@@ -87,9 +115,18 @@
     <section id="telaOk" class="card center" hidden>
       <div class="check">✅</div>
       <h2>Enviado!</h2>
+      <p class="ajuda">O comprovante já está no grupo da comunidade.</p>
       <button type="button" id="btnNovo" class="btn primario">Registrar outro</button>
     </section>
   </main>
+
+  <footer class="rodape">
+    <div class="oracao">Comunidade Santo Antônio · rogai por nós 🙏</div>
+    <a class="credito" href="https://ofarias.com.br" target="_blank" rel="noopener">
+      <img src="/img/ofarias.png" alt="ofarias.com.br" class="dev-logo" />
+      <span>Desenvolvido por <b>ofarias.com.br</b></span>
+    </a>
+  </footer>
 
   <div id="toast" class="toast" hidden></div>
 

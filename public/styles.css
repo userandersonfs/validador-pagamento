@@ -1,105 +1,179 @@
 :root {
-  --azul: #1f6feb;
-  --azul-esc: #1858c4;
-  --bg: #f4f6f9;
-  --card: #ffffff;
-  --texto: #1a1f2b;
-  --suave: #6b7280;
-  --borda: #dfe3ea;
-  --ok: #16a34a;
+  /* Paleta franciscana: marrom hábito, dourado, creme */
+  --marrom: #6b4523;
+  --marrom-esc: #533619;
+  --ouro: #b8862b;
+  --ouro-claro: #d9b44a;
+  --creme: #efe3cf;
+  --papel: #fbf4e6;
+  --texto: #362514;
+  --suave: #8a7455;
+  --borda: #e2d3b8;
+  --ok: #4b7a34;
+  --erro: #b5442e;
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #0f1420; --card: #182030; --texto: #e8ecf4;
-    --suave: #9aa4b5; --borda: #2a3550;
+    --marrom: #caa063;
+    --marrom-esc: #b88f52;
+    --ouro: #d9b44a;
+    --ouro-claro: #ecca6e;
+    --creme: #1a130c;
+    --papel: #261c11;
+    --texto: #f0e6d3;
+    --suave: #b7a385;
+    --borda: #3a2c1b;
+    --ok: #7fb25a;
+    --erro: #e08a72;
   }
 }
 
 * { box-sizing: border-box; }
+[hidden] { display: none !important; } /* garante que o atributo hidden vença display:flex */
 html, body { margin: 0; }
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  background: var(--bg);
+  background:
+    radial-gradient(120% 60% at 50% 0%, color-mix(in srgb, var(--ouro) 12%, transparent), transparent 60%),
+    var(--creme);
   color: var(--texto);
   min-height: 100vh;
   padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
 
+/* Cabecalho */
 .topo {
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 12px; padding: 16px; max-width: 560px; margin: 0 auto;
+  max-width: 560px; margin: 0 auto;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 16px;
 }
-.topo h1 { font-size: 1.15rem; margin: 0; }
+.marca { display: flex; align-items: center; gap: 12px; }
+.emblema {
+  width: 46px; height: 46px; border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(83, 54, 25, .35);
+}
+.marca-txt h1 {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.16rem; line-height: 1.1; margin: 0; color: var(--marrom);
+  letter-spacing: .2px;
+}
+.marca-txt p { margin: 2px 0 0; font-size: .74rem; color: var(--suave); text-transform: uppercase; letter-spacing: 1.5px; }
 .quem { font-size: .82rem; color: var(--suave); display: flex; align-items: center; gap: 6px; }
 
-main { max-width: 560px; margin: 0 auto; padding: 0 16px 40px; }
+/* Faixa instalar */
+.instalar {
+  max-width: 560px; margin: 0 auto 4px; padding: 10px 16px;
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  background: color-mix(in srgb, var(--ouro) 16%, var(--papel));
+  border: 1px solid var(--borda); border-radius: 12px;
+  font-size: .85rem;
+}
+.instalar { margin-left: 16px; margin-right: 16px; }
+.instalar-acoes { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.btn-mini {
+  background: var(--marrom); color: #fff; border: none;
+  padding: 8px 14px; border-radius: 9px; font-weight: 600; font-size: .82rem; cursor: pointer;
+}
+
+main { max-width: 560px; margin: 0 auto; padding: 8px 16px 24px; }
 
 .card {
-  background: var(--card);
+  background: var(--papel);
   border: 1px solid var(--borda);
-  border-radius: 16px;
-  padding: 20px;
+  border-radius: 18px;
+  padding: 22px;
   margin-bottom: 16px;
+  box-shadow: 0 6px 22px rgba(83, 54, 25, .07);
 }
-.card h2 { margin: 0 0 6px; font-size: 1.05rem; }
+.card h2 {
+  font-family: Georgia, "Times New Roman", serif;
+  margin: 0 0 6px; font-size: 1.16rem; color: var(--marrom);
+}
 .center { text-align: center; }
-.ajuda { color: var(--suave); font-size: .85rem; margin: 6px 0 14px; }
+.ajuda { color: var(--suave); font-size: .85rem; margin: 6px 0 14px; line-height: 1.4; }
+.lirio-img { width: 72px; height: 72px; border-radius: 18px; display: block; margin: 0 auto 8px; box-shadow: 0 3px 10px rgba(83,54,25,.28); }
 
-/* Botao de captura grande */
+/* Botao de captura */
 .captura {
-  display: flex; flex-direction: column; align-items: center; gap: 8px;
-  padding: 34px 16px; border: 2px dashed var(--azul);
-  border-radius: 14px; cursor: pointer; text-align: center;
-  color: var(--azul); background: color-mix(in srgb, var(--azul) 6%, transparent);
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 38px 16px; border: 2px dashed var(--ouro);
+  border-radius: 16px; cursor: pointer; text-align: center;
+  color: var(--marrom);
+  background: color-mix(in srgb, var(--ouro) 8%, transparent);
+  transition: background .15s;
 }
-.captura-icone { font-size: 2.6rem; }
-.captura-txt { font-weight: 600; font-size: 1.05rem; }
+.captura:active { background: color-mix(in srgb, var(--ouro) 16%, transparent); }
+.captura-icone { font-size: 2.8rem; }
+.captura-txt { font-weight: 700; font-size: 1.08rem; }
+.captura-sub { font-size: .8rem; color: var(--suave); }
 
 /* Inputs */
-label { display: block; font-size: .85rem; color: var(--suave); margin-bottom: 12px; }
-.req { color: #e05252; }
+label { display: block; font-size: .82rem; color: var(--suave); margin-bottom: 14px; font-weight: 600; }
+.req { color: var(--erro); }
 input, textarea {
-  width: 100%; margin-top: 5px; padding: 12px;
-  font-size: 16px; /* evita zoom no iOS */
-  border: 1px solid var(--borda); border-radius: 10px;
-  background: var(--bg); color: var(--texto);
+  width: 100%; margin-top: 6px; padding: 12px;
+  font-size: 16px; /* evita zoom no iOS */ font-family: inherit;
+  border: 1px solid var(--borda); border-radius: 11px;
+  background: var(--creme); color: var(--texto);
 }
-input:focus, textarea:focus { outline: 2px solid var(--azul); border-color: var(--azul); }
+input:focus, textarea:focus { outline: 2px solid var(--ouro); border-color: var(--ouro); }
 .linha { display: flex; gap: 12px; }
 .linha label { flex: 1; }
 
 .preview {
   width: 100%; max-height: 240px; object-fit: contain;
-  border-radius: 10px; border: 1px solid var(--borda);
+  border-radius: 12px; border: 1px solid var(--borda);
   background: #000; margin-bottom: 16px;
 }
 
 /* Botoes */
 .btn {
-  width: 100%; padding: 14px; font-size: 1rem; font-weight: 600;
-  border: none; border-radius: 12px; cursor: pointer;
+  width: 100%; padding: 15px; font-size: 1rem; font-weight: 700; font-family: inherit;
+  border: none; border-radius: 13px; cursor: pointer;
 }
-.primario { background: var(--azul); color: #fff; }
-.primario:active { background: var(--azul-esc); }
+.primario {
+  background: linear-gradient(180deg, var(--marrom), var(--marrom-esc));
+  color: #fff; box-shadow: 0 4px 12px rgba(83, 54, 25, .28);
+}
+.primario:active { transform: translateY(1px); }
 .secundario { background: transparent; color: var(--suave); border: 1px solid var(--borda); }
-.link { background: none; border: none; color: var(--azul); cursor: pointer; font-size: .82rem; padding: 0; }
-.acoes { display: flex; gap: 12px; margin-top: 8px; }
+.link { background: none; border: none; color: var(--ouro); cursor: pointer; font-size: .82rem; padding: 0; font-weight: 600; }
+.link.claro { color: var(--marrom); }
+.acoes { display: flex; gap: 12px; margin-top: 4px; }
 .acoes .btn { flex: 1; }
-.btn[disabled] { opacity: .55; cursor: default; }
+.btn[disabled] { opacity: .55; }
 
 /* Spinner */
 .spinner {
-  width: 40px; height: 40px; margin: 12px auto;
-  border: 4px solid var(--borda); border-top-color: var(--azul);
+  width: 42px; height: 42px; margin: 14px auto;
+  border: 4px solid var(--borda); border-top-color: var(--ouro);
   border-radius: 50%; animation: girar .8s linear infinite;
 }
 @keyframes girar { to { transform: rotate(360deg); } }
-.check { font-size: 3rem; margin-bottom: 8px; }
+.check { font-size: 3rem; margin-bottom: 6px; }
+
+.rodape {
+  text-align: center; color: var(--suave);
+  padding: 8px 16px 30px;
+}
+.rodape .oracao { font-size: .78rem; font-family: Georgia, serif; font-style: italic; }
+.credito {
+  display: inline-flex; align-items: center; gap: 8px;
+  margin-top: 12px; padding: 6px 12px 6px 6px;
+  border: 1px solid var(--borda); border-radius: 999px;
+  background: var(--papel); color: var(--suave);
+  text-decoration: none; font-size: .76rem;
+}
+.credito b { color: var(--marrom); font-weight: 700; }
+.dev-logo {
+  width: 30px; height: 30px; border-radius: 50%;
+  border: 1.5px solid var(--ouro); background: #fff; object-fit: cover;
+}
 
 /* Toast */
 .toast {
   position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
-  background: #d33; color: #fff; padding: 12px 18px; border-radius: 10px;
-  font-size: .9rem; max-width: 90%; z-index: 10; box-shadow: 0 6px 20px rgba(0,0,0,.25);
+  background: var(--erro); color: #fff; padding: 12px 18px; border-radius: 11px;
+  font-size: .9rem; max-width: 90%; z-index: 10; box-shadow: 0 6px 20px rgba(0,0,0,.28);
 }
 .toast.ok { background: var(--ok); }

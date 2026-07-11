@@ -85,34 +85,68 @@ function extrairBanco(texto) {
   return '';
 }
 
-// --- NOME (do pagador / origem, com heuristica) ---
-const RE_ROTULO_NOME = /^(nome(?:\s+completo)?|pagador|origem|de|quem pagou|remetente)\s*[:\-]?\s*(.*)$/i;
+// --- NOME (prioriza QUEM PAGOU; nunca devolve o recebedor como pagador) ---
+const RE_SEC_PAGOU = /\b(quem\s+pagou|quem\s+paga|pagador|dados\s+do\s+pagador|dados\s+de\s+quem\s+pagou|conta\s+de\s+origem|origem)\b/i;
+const RE_SEC_RECEBEU = /\b(quem\s+recebeu|quem\s+recebe|recebedor|benefici[aá]rio|favorecido|dados\s+do\s+recebedor|destinat[aá]rio|conta\s+de\s+destino|destino)\b/i;
+const RE_NOME_LABEL = /^\s*nome(?:\s+completo)?\s*[:\-]?\s*(.*)$/i;
 const RE_NOME_VALIDO = /^[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ.'\-]+(?:\s+[A-Za-zÀ-ÿ.'\-]+){1,5}$/;
 
 function pareceNome(linha) {
-  if (!RE_NOME_VALIDO.test(linha)) return false;
-  if (/\d/.test(linha)) return false;
-  if (/(banco|pix|comprovante|valor|data|hora|conta|agencia|ag[eê]ncia|cpf|cnpj|chave|institui|pagamento|transfer)/i.test(linha)) return false;
+  const l = (linha || '').trim();
+  if (!RE_NOME_VALIDO.test(l)) return false;
+  if (/\d/.test(l)) return false;
+  if (/(banco|pix|comprovante|valor|data|hora|conta|agencia|ag[eê]ncia|cpf|cnpj|chave|institui|pagamento|transfer|identificador|transa[cç]|quem|pagou|recebeu|origem|destino|enviado|recebido)/i.test(l)) return false;
   return true;
 }
 
-function extrairNome(linhas) {
-  for (let i = 0; i < linhas.length; i++) {
-    const m = linhas[i].match(RE_ROTULO_NOME);
+// Procura "Nome ..." entre [inicio, fim) e devolve o nome (na mesma linha ou logo abaixo).
+function nomeAposLabel(linhas, inicio, fim) {
+  for (let i = inicio; i < fim; i++) {
+    const m = linhas[i].match(RE_NOME_LABEL);
     if (m) {
-      const inline = (m[2] || '').trim();
+      const inline = (m[1] || '').trim();
       if (inline && pareceNome(inline)) return inline;
-      // pega a proxima linha nao vazia que pareca nome
-      for (let j = i + 1; j < Math.min(i + 3, linhas.length); j++) {
+      for (let j = i + 1; j < Math.min(i + 3, fim); j++) {
         if (pareceNome(linhas[j])) return linhas[j];
       }
     }
   }
-  // ultimo recurso: primeira linha "que parece nome" no texto
-  for (const l of linhas) {
-    if (pareceNome(l)) return l;
-  }
   return '';
+}
+
+// Primeira linha que "parece nome" no intervalo.
+function primeiroNome(linhas, inicio, fim) {
+  for (let i = inicio; i < fim; i++) if (pareceNome(linhas[i])) return linhas[i].trim();
+  return '';
+}
+
+// Nome dentro de uma secao: tenta o rotulo "Nome", senao a 1a linha que parece nome.
+function nomeNaSecao(linhas, inicio, fim) {
+  const inicioLabel = Math.max(0, inicio);
+  const inicioNome = Math.max(0, inicio + 1);
+  return nomeAposLabel(linhas, inicioLabel, fim) || primeiroNome(linhas, inicioNome, fim);
+}
+
+function indiceSecao(linhas, re) {
+  for (let i = 0; i < linhas.length; i++) if (re.test(linhas[i])) return i;
+  return -1;
+}
+
+function extrairNome(linhas) {
+  const iPagou = indiceSecao(linhas, RE_SEC_PAGOU);
+  const iRecebeu = indiceSecao(linhas, RE_SEC_RECEBEU);
+
+  // 1) Existe a secao "Quem pagou": pega o Nome dela (ate a proxima secao)
+  if (iPagou >= 0) {
+    const fim = iRecebeu > iPagou ? iRecebeu : linhas.length;
+    return nomeNaSecao(linhas, iPagou, fim); // vazio se a foto cortou o nome (melhor que errado)
+  }
+
+  // 2) So existe a secao do recebedor: NAO chuta o nome dele como pagador
+  if (iRecebeu >= 0) return '';
+
+  // 3) Sem secoes (comprovante simples de um nome so): heuristica generica
+  return nomeNaSecao(linhas, -1, linhas.length);
 }
 
 export function parseReceipt(texto) {
