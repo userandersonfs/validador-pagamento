@@ -2,6 +2,8 @@
 
 const $ = (id) => document.getElementById(id);
 const telas = ['telaQuem', 'telaCaptura', 'telaLendo', 'telaConferir', 'telaOk'];
+const MAX_FOTOS = 5;
+let fotos = [];         // File[] do comprovante atual
 let idPendente = null;
 
 function mostrar(tela) {
@@ -26,6 +28,7 @@ function setQuem(nome) {
 }
 
 function iniciar() {
+  renderFotos();
   const quem = getQuem();
   if (quem) { setQuem(quem); mostrar('telaCaptura'); }
   else { mostrar('telaQuem'); }
@@ -44,24 +47,57 @@ $('trocarQuem').addEventListener('click', () => {
   mostrar('telaQuem');
 });
 
-// --- Captura + OCR ---
-$('foto').addEventListener('change', async (e) => {
-  const file = e.target.files && e.target.files[0];
-  e.target.value = ''; // permite re-selecionar a mesma foto
-  if (!file) return;
+// --- Captura de multiplas fotos ---
+function renderFotos() {
+  const cont = $('fotos');
+  cont.innerHTML = '';
+  fotos.forEach((f, i) => {
+    const item = document.createElement('div');
+    item.className = 'foto-item';
+    const img = document.createElement('img');
+    img.src = URL.createObjectURL(f);
+    const rm = document.createElement('button');
+    rm.type = 'button';
+    rm.className = 'foto-rm';
+    rm.textContent = '✕';
+    rm.setAttribute('aria-label', 'Remover foto');
+    rm.addEventListener('click', () => { fotos.splice(i, 1); renderFotos(); });
+    item.appendChild(img);
+    item.appendChild(rm);
+    cont.appendChild(item);
+  });
+  if (fotos.length < MAX_FOTOS) {
+    const add = document.createElement('button');
+    add.type = 'button';
+    add.className = 'foto-add';
+    add.innerHTML = `<span class="foto-add-ico">📸</span><span>Foto ${fotos.length + 1}</span>`;
+    add.addEventListener('click', () => $('foto').click());
+    cont.appendChild(add);
+  }
+  $('btnLer').disabled = fotos.length === 0;
+  $('btnLer').textContent = fotos.length ? `Ler comprovante (${fotos.length})` : 'Ler comprovante';
+}
 
-  $('preview').src = URL.createObjectURL(file);
+$('foto').addEventListener('change', (e) => {
+  const f = e.target.files && e.target.files[0];
+  e.target.value = ''; // permite bater a proxima foto
+  if (f) { fotos.push(f); renderFotos(); }
+});
+
+$('btnLer').addEventListener('click', async () => {
+  if (!fotos.length) return;
+  $('preview').src = URL.createObjectURL(fotos[0]);
   mostrar('telaLendo');
-
   try {
     const fd = new FormData();
-    fd.append('photo', file);
+    fotos.forEach((f) => fd.append('photos', f));
     const resp = await fetch('/api/extract', { method: 'POST', body: fd });
     const data = await resp.json();
-    if (!resp.ok) throw new Error(data.error || 'Falha ao ler a foto.');
+    if (!resp.ok) throw new Error(data.error || 'Falha ao ler as fotos.');
 
     idPendente = data.id;
     preencher(data.fields || {});
+    $('fotoCount').textContent = fotos.length > 1 ? `📎 ${fotos.length} fotos anexadas` : '📎 1 foto anexada';
     mostrar('telaConferir');
   } catch (err) {
     toast(err.message);
@@ -78,6 +114,8 @@ function preencher(f) {
   $('cE2e').value = f.e2e || '';
   $('cObs').value = '';
 }
+
+function limparFotos() { fotos = []; idPendente = null; renderFotos(); }
 
 // --- Enviar ---
 $('formConferir').addEventListener('submit', async (e) => {
@@ -106,18 +144,18 @@ $('formConferir').addEventListener('submit', async (e) => {
     });
     const data = await resp.json();
     if (!resp.ok) throw new Error(data.error || 'Falha ao enviar.');
-    idPendente = null;
+    limparFotos();
     mostrar('telaOk');
   } catch (err) {
     toast(err.message);
   } finally {
     btn.disabled = false;
-    btn.textContent = 'Enviar pro Telegram';
+    btn.textContent = 'Enviar';
   }
 });
 
-$('btnCancelar').addEventListener('click', () => { idPendente = null; mostrar('telaCaptura'); });
-$('btnNovo').addEventListener('click', () => mostrar('telaCaptura'));
+$('btnCancelar').addEventListener('click', () => { limparFotos(); mostrar('telaCaptura'); });
+$('btnNovo').addEventListener('click', () => { limparFotos(); mostrar('telaCaptura'); });
 
 // --- PWA: service worker + instalacao ---
 if ('serviceWorker' in navigator) {
@@ -136,7 +174,6 @@ function mostrarBanner() {
   $('instalarBanner').hidden = false;
 }
 
-// Android/Chrome: intercepta o convite nativo
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   promptInstalar = e;
@@ -160,7 +197,6 @@ $('fecharInstalar').addEventListener('click', () => {
 
 window.addEventListener('appinstalled', () => { $('instalarBanner').hidden = true; });
 
-// iPhone (Safari nao dispara beforeinstallprompt): mostra o passo a passo
 if (ehIOS && !jaInstalado) {
   $('btnInstalar').hidden = true;
   $('instalarTxt').innerHTML = '📲 Pra instalar: toque em <b>Compartilhar</b> ⬆️ e depois <b>Adicionar à Tela de Início</b>.';

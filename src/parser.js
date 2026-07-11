@@ -99,15 +99,35 @@ function pareceNome(linha) {
   return true;
 }
 
+// Remove grupos numericos (CNPJ / base de MEI, ex: "43 229 226 SILMARA...") e limpa.
+function limparNome(s) {
+  return (s || '')
+    .replace(/\b\d[\d.\-/]*\b/g, ' ') // 43, 229, 226, 43.229.226/0001-71
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
+// Validacao relaxada: usada quando o valor veio logo apos o rotulo "Nome"
+// (ali confiamos que e o nome, mesmo se for razao social de MEI).
+function ehNomeRelaxado(s) {
+  const t = (s || '').trim();
+  if (t.length < 3) return false;
+  const palavras = t.split(/\s+/).filter((p) => /[A-Za-zÀ-ÿ]{2,}/.test(p));
+  if (palavras.length < 2) return false;
+  if (/(cpf|cnpj|institui|banco|ag[eê]ncia|conta|chave|hora|data|valor|identificador)/i.test(t)) return false;
+  return true;
+}
+
 // Procura "Nome ..." entre [inicio, fim) e devolve o nome (na mesma linha ou logo abaixo).
 function nomeAposLabel(linhas, inicio, fim) {
   for (let i = inicio; i < fim; i++) {
     const m = linhas[i].match(RE_NOME_LABEL);
     if (m) {
-      const inline = (m[1] || '').trim();
-      if (inline && pareceNome(inline)) return inline;
+      const inline = limparNome(m[1] || '');
+      if (ehNomeRelaxado(inline)) return inline;
       for (let j = i + 1; j < Math.min(i + 3, fim); j++) {
-        if (pareceNome(linhas[j])) return linhas[j];
+        const cand = limparNome(linhas[j]);
+        if (ehNomeRelaxado(cand)) return cand;
       }
     }
   }

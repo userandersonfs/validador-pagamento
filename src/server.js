@@ -10,6 +10,7 @@ import { enviarComprovante, isConfigured } from './telegram.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3000;
+const MAX_FOTOS = 5;
 
 const app = express();
 app.use(express.json());
@@ -17,12 +18,12 @@ app.use(express.static(path.join(__dirname, '..', 'public')));
 
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 15 * 1024 * 1024 }, // 15 MB
+  limits: { fileSize: 15 * 1024 * 1024, files: MAX_FOTOS }, // 15 MB por foto
 });
 
 // --- Armazenamento temporario em memoria (entre "ler" e "enviar") ---
-// Guarda a imagem tratada por um id curto; expira sozinho. Nada persiste.
-const PENDENTES = new Map(); // id -> { buffer, mime, criadoEm }
+// Guarda as fotos tratadas por um id curto; expira sozinho. Nada persiste.
+const PENDENTES = new Map(); // id -> { buffers: [Buffer], criadoEm }
 const TTL_MS = 15 * 60 * 1000;
 
 setInterval(() => {
@@ -47,20 +48,22 @@ app.get('/api/health', (_req, res) => {
   res.json({ ok: true, telegram: isConfigured() });
 });
 
-// Recebe a foto, roda OCR, devolve campos + um id pra enviar depois.
-app.post('/api/extract', upload.single('photo'), async (req, res) => {
+// Recebe 1..N fotos, roda OCR combinado, devolve campos + um id pra enviar depois.
+app.post('/api/extract', upload.array('photos', MAX_FOTOS), async (req, res) => {
   try {
-    if (!req.file) return res.status(400).json({ error: 'Nenhuma foto enviada.' });
+    const arquivos = req.files || [];
+    if (arquivos.length === 0) return res.status(400).json({ error: 'Nenhuma foto enviada.' });
 
-    const tratada = await tratarImagem(req.file.buffer);
+    const buffers = [];
+    for (const f of arquivos) buffers.push(await tratarImagem(f.buffer));
 
     const id = crypto.randomUUID();
-    PENDENTES.set(id, { buffer: tratada, mime: 'image/jpeg', criadoEm: Date.now() });
+    PENDENTES.set(id, { buffers, criadoEm: Date.now() });
 
     let fields = { data: '', hora: '', nome: '', valor: '', banco: '', e2e: '' };
     let ocrText = '';
     try {
-      const r = await extract(tratada);
+      const r = await extract(buffers);
       fields = r.fields;
       ocrText = r.ocrText;
     } catch (err) {
@@ -68,20 +71,20 @@ app.post('/api/extract', upload.single('photo'), async (req, res) => {
       console.warn('[extract] OCR falhou:', err.message);
     }
 
-    res.json({ id, fields, ocrText });
+    res.json({ id, fotos: buffers.length, fields, ocrText });
   } catch (err) {
     console.error('[extract] erro:', err);
-    res.status(500).json({ error: 'Falha ao processar a imagem.' });
+    res.status(500).json({ error: 'Falha ao processar as imagens.' });
   }
 });
 
-// Envia a foto pendente + os campos confirmados pro Telegram.
+// Envia as fotos pendentes + os campos confirmados pro Telegram.
 app.post('/api/send', async (req, res) => {
   try {
     const { id, ...campos } = req.body || {};
     const pendente = id && PENDENTES.get(id);
     if (!pendente) {
-      return res.status(410).json({ error: 'A foto expirou ou nao foi encontrada. Tire a foto de novo.' });
+      return res.status(410).json({ error: 'As fotos expiraram ou nao foram encontradas. Tire de novo.' });
     }
     if (!campos.nome || !campos.data || !campos.hora) {
       return res.status(400).json({ error: 'Nome, data e hora sao obrigatorios.' });
@@ -90,7 +93,7 @@ app.post('/api/send', async (req, res) => {
       return res.status(503).json({ error: 'Telegram nao configurado no servidor.' });
     }
 
-    await enviarComprovante(pendente.buffer, pendente.mime, campos);
+    await enviarComprovante(pendente.buffers, campos);
     PENDENTES.delete(id);
     res.json({ ok: true });
   } catch (err) {

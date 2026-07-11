@@ -57,5 +57,15 @@ Nome João da Silva Santos
 Valor R$ 20,00
 11/07/2026`, 'João da Silva Santos');
 
+// F) Pagador MEI: razao social comeca com o numero do CNPJ.
+// Deve limpar os numeros e pegar o nome.
+checa('pagador MEI (Inter)', `Quem recebeu
+Nome Marlon Douglas Castro Costa
+Instituição Mercado Pago lp LTDA.
+Quem pagou
+Nome 43 229 226 SILMARA DE FREITAS
+CPF/CNPJ 43.229.226/0001-71
+Instituição Banco Inter S.A.`, 'SILMARA DE FREITAS');
+
 console.log('\n' + (falhas === 0 ? 'TODOS OK ✓' : `${falhas} FALHA(S)`));
 process.exit(falhas === 0 ? 0 : 1);

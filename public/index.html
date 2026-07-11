@@ -53,13 +53,11 @@
 
     <!-- Etapa 1: capturar -->
     <section id="telaCaptura" class="card" hidden>
-      <label class="captura">
-        <input type="file" id="foto" accept="image/*" capture="environment" hidden />
-        <span class="captura-icone">📸</span>
-        <span class="captura-txt">Bater foto do comprovante</span>
-        <span class="captura-sub">Toque para abrir a câmera</span>
-      </label>
-      <p class="ajuda">Enquadre bem: nome, data/hora e valor.</p>
+      <h2>Fotos do comprovante</h2>
+      <p class="ajuda">Bata <b>2 fotos</b>: o <b>topo</b> e o <b>rodapé</b> do comprovante. Assim o app consegue ler até <b>quem pagou</b>. Pode adicionar mais se precisar.</p>
+      <input type="file" id="foto" accept="image/*" capture="environment" hidden />
+      <div id="fotos" class="fotos"></div>
+      <button type="button" id="btnLer" class="btn primario" disabled>Ler comprovante</button>
     </section>
 
     <!-- Etapa 2: lendo -->
@@ -73,6 +71,7 @@
       <h2>Confira e corrija</h2>
       <p class="ajuda">O que o app não leu direito, ajuste aqui antes de enviar.</p>
       <img id="preview" class="preview" alt="Comprovante" />
+      <p id="fotoCount" class="foto-count"></p>
 
       <form id="formConferir">
         <div class="linha">

@@ -28,9 +28,16 @@ export async function warmup() {
   }
 }
 
-// Recebe um Buffer de imagem (ja tratada), devolve { fields, ocrText }.
-export async function extract(imageBuffer) {
+// Recebe um Buffer OU um array de Buffers (varias fotos do mesmo comprovante).
+// Roda OCR em cada uma e junta o texto antes de extrair -> pega ate o que
+// nao coube numa foto so (ex: o "Quem pagou" no rodape). Devolve { fields, ocrText }.
+export async function extract(buffers) {
+  const lista = Array.isArray(buffers) ? buffers : [buffers];
   const worker = await getWorker();
-  const { data: { text } } = await worker.recognize(imageBuffer);
-  return { fields: parseReceipt(text), ocrText: text };
+  let texto = '';
+  for (const b of lista) {
+    const { data: { text } } = await worker.recognize(b);
+    texto += text + '\n';
+  }
+  return { fields: parseReceipt(texto), ocrText: texto };
 }

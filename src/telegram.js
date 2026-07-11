@@ -1,4 +1,5 @@
-// Envio pro Telegram via Bot API. Stateless: manda a foto + legenda formatada.
+// Envio pro Telegram via Bot API. Stateless.
+// 1 foto  -> sendPhoto ; 2..10 fotos -> sendMediaGroup (album), legenda na 1a.
 
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const CHAT_ID = process.env.TELEGRAM_CHAT_ID;
@@ -8,7 +9,6 @@ export function isConfigured() {
 }
 
 function fmtDataHora(dataISO, hora) {
-  // dataISO = yyyy-mm-dd  ->  dd/mm/yyyy
   let data = dataISO || '';
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dataISO || '');
   if (m) data = `${m[3]}/${m[2]}/${m[1]}`;
@@ -34,28 +34,47 @@ function montarLegenda(campos) {
   if (campos.obs) linhas.push(`📝 Obs: ${campos.obs}`);
   linhas.push('');
   linhas.push(`Registrado por: ${campos.registrante || '—'} • ${agoraSaoPaulo()}`);
-  // Telegram: legenda de foto tem limite de 1024 caracteres.
   return linhas.join('\n').slice(0, 1024);
 }
 
-// Envia a foto (Buffer) + legenda. Lanca erro se o Telegram recusar.
-export async function enviarComprovante(imageBuffer, mime, campos) {
-  if (!isConfigured()) {
-    throw new Error('Telegram nao configurado (defina TELEGRAM_BOT_TOKEN e TELEGRAM_CHAT_ID).');
-  }
-  const form = new FormData();
-  form.append('chat_id', CHAT_ID);
-  form.append('caption', montarLegenda(campos));
-  const ext = mime === 'image/png' ? 'png' : 'jpg';
-  form.append('photo', new Blob([imageBuffer], { type: mime || 'image/jpeg' }), `comprovante.${ext}`);
-
-  const resp = await fetch(`https://api.telegram.org/bot${TOKEN}/sendPhoto`, {
-    method: 'POST',
-    body: form,
-  });
+async function chamar(metodo, form) {
+  const resp = await fetch(`https://api.telegram.org/bot${TOKEN}/${metodo}`, { method: 'POST', body: form });
   const json = await resp.json().catch(() => ({}));
   if (!resp.ok || !json.ok) {
     throw new Error(`Telegram: ${json.description || resp.statusText || 'erro desconhecido'}`);
   }
   return json.result;
+}
+
+function blobJpg(buffer, nome) {
+  return [new Blob([buffer], { type: 'image/jpeg' }), nome];
+}
+
+// Envia 1..N fotos + os campos confirmados. Lanca erro se o Telegram recusar.
+export async function enviarComprovante(buffers, campos) {
+  if (!isConfigured()) {
+    throw new Error('Telegram nao configurado (defina TELEGRAM_BOT_TOKEN e TELEGRAM_CHAT_ID).');
+  }
+  const fotos = (Array.isArray(buffers) ? buffers : [buffers]).slice(0, 10);
+  const legenda = montarLegenda(campos);
+
+  if (fotos.length <= 1) {
+    const form = new FormData();
+    form.append('chat_id', CHAT_ID);
+    form.append('caption', legenda);
+    form.append('photo', ...blobJpg(fotos[0], 'comprovante.jpg'));
+    return chamar('sendPhoto', form);
+  }
+
+  // Album: legenda so na primeira foto
+  const media = fotos.map((_, i) => ({
+    type: 'photo',
+    media: `attach://f${i}`,
+    ...(i === 0 ? { caption: legenda } : {}),
+  }));
+  const form = new FormData();
+  form.append('chat_id', CHAT_ID);
+  form.append('media', JSON.stringify(media));
+  fotos.forEach((b, i) => form.append(`f${i}`, ...blobJpg(b, `comprovante${i + 1}.jpg`)));
+  return chamar('sendMediaGroup', form);
 }
