@@ -152,21 +152,71 @@ function indiceSecao(linhas, re) {
   return -1;
 }
 
+// Todos os nomes rotulados por "Nome" (com o indice da linha do rotulo).
+function candidatosNome(linhas) {
+  const res = [];
+  for (let i = 0; i < linhas.length; i++) {
+    const m = linhas[i].match(RE_NOME_LABEL);
+    if (!m) continue;
+    let nome = limparNome(m[1] || '');
+    if (!ehNomeRelaxado(nome)) {
+      for (let j = i + 1; j < Math.min(i + 3, linhas.length); j++) {
+        const c = limparNome(linhas[j]);
+        if (ehNomeRelaxado(c)) { nome = c; break; }
+      }
+    }
+    if (ehNomeRelaxado(nome)) res.push({ nome, i });
+  }
+  return res;
+}
+
+// CPF (000.000.000-00) ou CNPJ (00.000.000/0000-00) COMPLETO (sem mascara "*").
+function docCompleto(linha) {
+  return /\b\d{3}\.\d{3}\.\d{3}-\d{2}\b/.test(linha) || /\b\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}\b/.test(linha);
+}
+
+// Nome cujo documento (no proprio bloco) esta completo = pagador (no "Pix
+// enviado" o recebedor aparece mascarado com "***"). A busca vai so ate o
+// proximo "Nome", pra nao pegar o documento da outra pessoa.
+function nomePorDoc(linhas, cands) {
+  for (let k = 0; k < cands.length; k++) {
+    const ini = cands[k].i + 1;
+    const fim = k + 1 < cands.length ? cands[k + 1].i : Math.min(cands[k].i + 5, linhas.length);
+    for (let j = ini; j < fim; j++) {
+      if (docCompleto(linhas[j])) return cands[k].nome;
+    }
+  }
+  return '';
+}
+
 function extrairNome(linhas) {
   const iPagou = indiceSecao(linhas, RE_SEC_PAGOU);
   const iRecebeu = indiceSecao(linhas, RE_SEC_RECEBEU);
 
-  // 1) Existe a secao "Quem pagou": pega o Nome dela (ate a proxima secao)
+  // 1) Secao "Quem pagou" explicita: pega o Nome dela (ate a proxima secao).
   if (iPagou >= 0) {
     const fim = iRecebeu > iPagou ? iRecebeu : linhas.length;
     return nomeNaSecao(linhas, iPagou, fim); // vazio se a foto cortou o nome (melhor que errado)
   }
 
-  // 2) So existe a secao do recebedor: NAO chuta o nome dele como pagador
+  const cands = candidatosNome(linhas);
+
+  // 2) Sem o cabecalho do pagador: usa o sinal do DOCUMENTO COMPLETO (pagador).
+  const porDoc = nomePorDoc(linhas, cands);
+  if (porDoc) return porDoc;
+
+  // 3) So ha cabecalho de recebedor e nenhum sinal de pagador: em branco.
   if (iRecebeu >= 0) return '';
 
-  // 3) Sem secoes (comprovante simples de um nome so): heuristica generica
-  return nomeNaSecao(linhas, -1, linhas.length);
+  // 4) Sem cabecalhos: 1 nome so -> usa; varios nomes ambiguos -> em branco.
+  if (cands.length === 1) return cands[0].nome;
+  if (cands.length === 0) {
+    for (const l of linhas) {
+      const c = limparNome(l);
+      if (pareceNome(c)) return c;
+    }
+  }
+  return '';
 }
 
 export function parseReceipt(texto) {

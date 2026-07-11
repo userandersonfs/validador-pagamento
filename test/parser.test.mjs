@@ -67,5 +67,14 @@ Nome 43 229 226 SILMARA DE FREITAS
 CPF/CNPJ 43.229.226/0001-71
 Instituição Banco Inter S.A.`, 'SILMARA DE FREITAS');
 
+// G) Fotos cortaram os cabecalhos: sobrou so "Nome ...". Recebedor mascarado,
+// pagador com CNPJ completo -> deve pegar o pagador (Silmara), nao Marlon.
+checa('sem cabecalho, doc completo', `Nome Marlon Douglas Castro Costa
+CPF/CNPJ ***.976.063-**
+Instituição Mercado Pago
+Nome 43 229 226 SILMARA DE FREITAS
+CPF/CNPJ 43.229.226/0001-71
+Instituição Banco Inter S.A.`, 'SILMARA DE FREITAS');
+
 console.log('\n' + (falhas === 0 ? 'TODOS OK ✓' : `${falhas} FALHA(S)`));
 process.exit(falhas === 0 ? 0 : 1);
