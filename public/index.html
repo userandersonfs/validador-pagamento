@@ -58,6 +58,7 @@
       <input type="file" id="foto" accept="image/*" capture="environment" hidden />
       <div id="fotos" class="fotos"></div>
       <button type="button" id="btnLer" class="btn primario" disabled>Ler comprovante</button>
+      <button type="button" id="btnVerLista" class="btn secundario" hidden>Ver comprovantes (0)</button>
     </section>
 
     <!-- Etapa 2: lendo -->
@@ -105,17 +106,26 @@
 
         <div class="acoes">
           <button type="button" id="btnCancelar" class="btn secundario">Refazer</button>
-          <button type="submit" id="btnEnviar" class="btn primario">Enviar</button>
+          <button type="submit" id="btnAdicionar" class="btn primario">Adicionar</button>
         </div>
       </form>
+    </section>
+
+    <!-- Etapa 3b: lista de comprovantes a enviar -->
+    <section id="telaLista" class="card" hidden>
+      <h2>Comprovantes a enviar</h2>
+      <p class="ajuda">Adicione quantos quiser e envie todos de uma vez. Toque num item para editar.</p>
+      <div id="listaItens" class="lista"></div>
+      <button type="button" id="btnAddOutro" class="btn secundario">➕ Adicionar outro comprovante</button>
+      <button type="button" id="btnEnviarTodos" class="btn primario">Enviar todos</button>
     </section>
 
     <!-- Etapa 4: sucesso -->
     <section id="telaOk" class="card center" hidden>
       <div class="check">✅</div>
-      <h2>Enviado!</h2>
-      <p class="ajuda">O comprovante já está no grupo da comunidade.</p>
-      <button type="button" id="btnNovo" class="btn primario">Registrar outro</button>
+      <h2 id="okTitulo">Enviado!</h2>
+      <p class="ajuda" id="okMsg">Já está no grupo da comunidade.</p>
+      <button type="button" id="btnNovo" class="btn primario">Registrar mais</button>
     </section>
   </main>
 

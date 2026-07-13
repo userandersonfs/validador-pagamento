@@ -1,10 +1,15 @@
 'use strict';
 
 const $ = (id) => document.getElementById(id);
-const telas = ['telaQuem', 'telaCaptura', 'telaLendo', 'telaConferir', 'telaOk'];
+const telas = ['telaQuem', 'telaCaptura', 'telaLendo', 'telaConferir', 'telaLista', 'telaOk'];
 const MAX_FOTOS = 5;
-let fotos = [];         // File[] do comprovante atual
-let idPendente = null;
+
+let fotos = [];        // File[] da captura atual
+let lista = [];        // comprovantes prontos p/ enviar: {id, campos, thumb, count}
+let idPendente = null; // id do comprovante em conferencia
+let editIndex = -1;    // -1 = novo; >=0 = editando item da lista
+let currentThumb = null;
+let currentCount = 0;
 
 function mostrar(tela) {
   for (const t of telas) $(t).hidden = t !== tela;
@@ -16,7 +21,7 @@ function toast(msg, ok = false) {
   el.classList.toggle('ok', ok);
   el.hidden = false;
   clearTimeout(toast._t);
-  toast._t = setTimeout(() => { el.hidden = true; }, 3500);
+  toast._t = setTimeout(() => { el.hidden = true; }, 4000);
 }
 
 // --- Identificacao (localStorage) ---
@@ -29,6 +34,7 @@ function setQuem(nome) {
 
 function iniciar() {
   renderFotos();
+  renderLista();
   const quem = getQuem();
   if (quem) { setQuem(quem); mostrar('telaCaptura'); }
   else { mostrar('telaQuem'); }
@@ -47,7 +53,7 @@ $('trocarQuem').addEventListener('click', () => {
   mostrar('telaQuem');
 });
 
-// --- Captura de multiplas fotos ---
+// --- Captura de multiplas fotos (do comprovante atual) ---
 function renderFotos() {
   const cont = $('fotos');
   cont.innerHTML = '';
@@ -80,13 +86,15 @@ function renderFotos() {
 
 $('foto').addEventListener('change', (e) => {
   const f = e.target.files && e.target.files[0];
-  e.target.value = ''; // permite bater a proxima foto
+  e.target.value = '';
   if (f) { fotos.push(f); renderFotos(); }
 });
 
 $('btnLer').addEventListener('click', async () => {
   if (!fotos.length) return;
-  $('preview').src = URL.createObjectURL(fotos[0]);
+  currentThumb = URL.createObjectURL(fotos[0]);
+  currentCount = fotos.length;
+  $('preview').src = currentThumb;
   mostrar('telaLendo');
   try {
     const fd = new FormData();
@@ -96,8 +104,10 @@ $('btnLer').addEventListener('click', async () => {
     if (!resp.ok) throw new Error(data.error || 'Falha ao ler as fotos.');
 
     idPendente = data.id;
-    preencher(data.fields || {});
-    $('fotoCount').textContent = fotos.length > 1 ? `📎 ${fotos.length} fotos anexadas` : '📎 1 foto anexada';
+    editIndex = -1;
+    preencherCampos(data.fields || {});
+    $('fotoCount').textContent = fotoCountTxt(currentCount);
+    $('btnAdicionar').textContent = 'Adicionar';
     mostrar('telaConferir');
   } catch (err) {
     toast(err.message);
@@ -105,24 +115,22 @@ $('btnLer').addEventListener('click', async () => {
   }
 });
 
-function preencher(f) {
+$('btnVerLista').addEventListener('click', () => mostrar('telaLista'));
+
+function fotoCountTxt(n) { return n > 1 ? `📎 ${n} fotos anexadas` : '📎 1 foto anexada'; }
+
+function preencherCampos(f) {
   $('cData').value = f.data || '';
   $('cHora').value = f.hora || '';
   $('cNome').value = f.nome || '';
   $('cValor').value = f.valor || '';
   $('cBanco').value = f.banco || '';
   $('cE2e').value = f.e2e || '';
-  $('cObs').value = '';
+  $('cObs').value = f.obs || '';
 }
 
-function limparFotos() { fotos = []; idPendente = null; renderFotos(); }
-
-// --- Enviar ---
-$('formConferir').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const btn = $('btnEnviar');
-  const campos = {
-    id: idPendente,
+function coletarCampos() {
+  return {
     data: $('cData').value,
     hora: $('cHora').value,
     nome: $('cNome').value.trim(),
@@ -132,35 +140,145 @@ $('formConferir').addEventListener('submit', async (e) => {
     obs: $('cObs').value.trim(),
     registrante: getQuem(),
   };
+}
+
+// --- Conferir -> adiciona (ou salva) na lista ---
+$('formConferir').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const campos = coletarCampos();
   if (!campos.nome || !campos.data || !campos.hora) return toast('Preencha nome, data e hora.');
 
+  const item = { id: idPendente, campos, thumb: currentThumb, count: currentCount };
+  if (editIndex >= 0) lista[editIndex] = item;
+  else lista.push(item);
+
+  editIndex = -1;
+  fotos = [];
+  renderFotos();
+  renderLista();
+  mostrar('telaLista');
+});
+
+$('btnCancelar').addEventListener('click', () => {
+  const voltaLista = editIndex >= 0 || lista.length > 0;
+  editIndex = -1;
+  fotos = [];
+  renderFotos();
+  mostrar(voltaLista ? 'telaLista' : 'telaCaptura');
+});
+
+// --- Lista de comprovantes ---
+function renderLista() {
+  const cont = $('listaItens');
+  cont.innerHTML = '';
+  lista.forEach((it, idx) => {
+    const card = document.createElement('div');
+    card.className = 'lista-item';
+    const img = document.createElement('img');
+    img.className = 'lista-thumb';
+    img.src = it.thumb || '/icons/icon-192.png';
+    const info = document.createElement('div');
+    info.className = 'lista-info';
+    const dataBR = it.campos.data ? it.campos.data.split('-').reverse().join('/') : '';
+    const nome = document.createElement('strong');
+    nome.textContent = it.campos.nome || '(sem nome)';
+    const linha = document.createElement('span');
+    linha.textContent = `${dataBR} ${it.campos.hora || ''} · ${it.campos.valor ? 'R$ ' + it.campos.valor : '—'}`;
+    const meta = document.createElement('span');
+    meta.className = 'lista-meta';
+    meta.textContent = `📎 ${it.count} foto(s)`;
+    info.append(nome, linha, meta);
+    const rm = document.createElement('button');
+    rm.type = 'button';
+    rm.className = 'lista-rm';
+    rm.textContent = '🗑️';
+    rm.setAttribute('aria-label', 'Remover');
+    rm.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      lista.splice(idx, 1);
+      renderLista();
+      if (!lista.length) { fotos = []; renderFotos(); mostrar('telaCaptura'); }
+    });
+    card.addEventListener('click', () => editarItem(idx));
+    card.append(img, info, rm);
+    cont.appendChild(card);
+  });
+  $('btnEnviarTodos').textContent = `Enviar todos (${lista.length})`;
+  $('btnVerLista').textContent = `Ver comprovantes (${lista.length})`;
+  $('btnVerLista').hidden = lista.length === 0;
+}
+
+function editarItem(idx) {
+  const it = lista[idx];
+  idPendente = it.id;
+  currentThumb = it.thumb;
+  currentCount = it.count;
+  editIndex = idx;
+  $('preview').src = it.thumb || '/icons/icon-192.png';
+  $('fotoCount').textContent = fotoCountTxt(it.count);
+  preencherCampos(it.campos);
+  $('btnAdicionar').textContent = 'Salvar';
+  mostrar('telaConferir');
+}
+
+$('btnAddOutro').addEventListener('click', () => {
+  editIndex = -1;
+  fotos = [];
+  renderFotos();
+  mostrar('telaCaptura');
+});
+
+// --- Enviar todos ---
+$('btnEnviarTodos').addEventListener('click', async () => {
+  if (!lista.length) return;
+  const btn = $('btnEnviarTodos');
   btn.disabled = true;
   btn.textContent = 'Enviando…';
-  try {
-    const resp = await fetch('/api/send', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(campos),
-    });
-    const data = await resp.json();
-    if (!resp.ok) throw new Error(data.error || 'Falha ao enviar.');
-    limparFotos();
+  const falhas = [];
+  for (const it of lista) {
+    try {
+      const resp = await fetch('/api/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: it.id, ...it.campos }),
+      });
+      const d = await resp.json();
+      if (!resp.ok) throw new Error(d.error || 'falha');
+    } catch (_) {
+      falhas.push(it);
+    }
+  }
+  btn.disabled = false;
+  const enviados = lista.length - falhas.length;
+  if (falhas.length === 0) {
+    lista = [];
+    renderLista();
+    $('okTitulo').textContent = enviados > 1 ? `${enviados} comprovantes enviados!` : 'Enviado!';
     mostrar('telaOk');
-  } catch (err) {
-    toast(err.message);
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'Enviar';
+  } else {
+    lista = falhas;
+    renderLista();
+    btn.textContent = `Enviar todos (${lista.length})`;
+    toast(`${enviados} enviado(s), ${falhas.length} falhou(aram). Tente de novo.`);
   }
 });
 
-$('btnCancelar').addEventListener('click', () => { limparFotos(); mostrar('telaCaptura'); });
-$('btnNovo').addEventListener('click', () => { limparFotos(); mostrar('telaCaptura'); });
+$('btnNovo').addEventListener('click', () => {
+  fotos = [];
+  renderFotos();
+  mostrar('telaCaptura');
+});
 
-// --- PWA: service worker + instalacao ---
+// --- PWA: service worker (com auto-atualizacao) + instalacao ---
 if ('serviceWorker' in navigator) {
+  let recarregou = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (recarregou) return;
+    recarregou = true;
+    location.reload(); // nova versao assumiu -> recarrega pra pegar os arquivos novos
+  });
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
+    navigator.serviceWorker.register('/sw.js').then((r) => r.update()).catch(() => {});
   });
 }
 

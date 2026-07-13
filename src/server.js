@@ -24,7 +24,7 @@ const upload = multer({
 // --- Armazenamento temporario em memoria (entre "ler" e "enviar") ---
 // Guarda as fotos tratadas por um id curto; expira sozinho. Nada persiste.
 const PENDENTES = new Map(); // id -> { buffers: [Buffer], criadoEm }
-const TTL_MS = 15 * 60 * 1000;
+const TTL_MS = 60 * 60 * 1000; // 1h: da tempo de montar a lista de varios comprovantes
 
 setInterval(() => {
   const agora = Date.now();

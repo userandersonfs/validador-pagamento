@@ -118,6 +118,25 @@ main { max-width: 560px; margin: 0 auto; padding: 8px 16px 24px; }
 .foto-add-ico { font-size: 2.2rem; }
 .foto-count { text-align: center; color: var(--suave); font-size: .8rem; margin: -8px 0 14px; }
 
+/* Lista de comprovantes (multiplas entradas) */
+.lista { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+.lista-item {
+  display: flex; align-items: center; gap: 12px; padding: 10px;
+  border: 1px solid var(--borda); border-radius: 14px; background: var(--creme);
+  cursor: pointer; text-align: left;
+}
+.lista-item:active { background: color-mix(in srgb, var(--ouro) 10%, var(--creme)); }
+.lista-thumb { width: 48px; height: 48px; border-radius: 10px; object-fit: cover; background: #000; flex-shrink: 0; }
+.lista-info { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.lista-info strong { color: var(--texto); font-size: .95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lista-info span { color: var(--suave); font-size: .78rem; }
+.lista-meta { color: var(--ouro) !important; }
+.lista-rm {
+  border: none; background: transparent; cursor: pointer; font-size: 1.2rem;
+  padding: 6px; border-radius: 8px; flex-shrink: 0;
+}
+#btnAddOutro { margin-bottom: 10px; }
+
 /* Inputs */
 label { display: block; font-size: .82rem; color: var(--suave); margin-bottom: 14px; font-weight: 600; }
 .req { color: var(--erro); }

@@ -1,7 +1,7 @@
 // Service worker: torna o app instalavel e funciona offline.
 // Estrategia network-first: sempre tenta a versao mais nova (deploys aparecem
 // na hora); se estiver offline, cai pro cache. /api/* nunca e cacheado.
-const CACHE = 'sto-antonio-pix-v2';
+const CACHE = 'sto-antonio-pix-v3';
 const SHELL = [
   '/',
   '/index.html',
